@@ -162,8 +162,8 @@ export function mountWarningBanner(options: WarningBannerOptions): WarningBanner
   doc.addEventListener('keydown', onDocumentKeyDown);
 
   // 5. Button event handlers
-  redactBtn.addEventListener('click', () => {
-    if (!mounted) {
+  redactBtn.addEventListener('click', (event: Event) => {
+    if (!mounted || !event.isTrusted) {
       return;
     }
 

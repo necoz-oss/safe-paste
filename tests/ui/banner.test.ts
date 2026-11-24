@@ -114,12 +114,34 @@ describe('UI Banner: mountWarningBanner', () => {
     const redactBtn = bannerElem.querySelectorAll('button')[0];
     expect(redactBtn).toBeDefined();
 
-    redactBtn!.dispatchEvent({ type: 'click' });
+    redactBtn!.dispatchEvent({ type: 'click', isTrusted: true });
 
     expect(onRedact).toHaveBeenCalledTimes(1);
     expect(onRedact).toHaveBeenCalledWith(session);
     expect(handle.isMounted()).toBe(false);
     expect(container.children).not.toContain(bannerElem);
+  });
+
+  it('ignores untrusted (synthetic) click events on Redact button', () => {
+    const onRedact = vi.fn();
+    const session = createMockSessionInfo(editor, [mockFindingClassic]);
+
+    const handle = mountWarningBanner({
+      session,
+      doc,
+      container: container as unknown as HTMLElement,
+      onRedact,
+    });
+
+    const bannerElem = handle.element as unknown as MockElement;
+    const redactBtn = bannerElem.querySelectorAll('button')[0];
+    expect(redactBtn).toBeDefined();
+
+    redactBtn!.dispatchEvent({ type: 'click', isTrusted: false });
+    redactBtn!.dispatchEvent({ type: 'click' });
+
+    expect(onRedact).not.toHaveBeenCalled();
+    expect(handle.isMounted()).toBe(true);
   });
 
   it('displays error message and disables button if onRedact returns a failure', () => {
@@ -142,7 +164,7 @@ describe('UI Banner: mountWarningBanner', () => {
     const redactBtn = bannerElem.querySelectorAll('button')[0];
     expect(redactBtn).toBeDefined();
 
-    redactBtn!.dispatchEvent({ type: 'click' });
+    redactBtn!.dispatchEvent({ type: 'click', isTrusted: true });
 
     expect(onRedact).toHaveBeenCalledTimes(1);
     expect(bannerElem.textContent).toContain('The editor content has changed.');
