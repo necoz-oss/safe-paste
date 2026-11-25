@@ -16,6 +16,7 @@ export interface AdapterOptions {
   readonly detectFn?: (text: string) => DetectionResult;
   readonly redactFn?: (text: string, targets: Parameters<typeof redact>[1]) => RedactionResult;
   readonly onFindings?: (sessionInfo: PasteSessionInfo) => void;
+  readonly onSessionInvalidated?: (sessionId: string, editor: HTMLTextAreaElement) => void;
 }
 
 export type SessionTarget =
@@ -33,11 +34,13 @@ export class PasteSessionCoordinator {
   private readonly detectFn: (text: string) => DetectionResult;
   private readonly redactFn: (text: string, targets: Parameters<typeof redact>[1]) => RedactionResult;
   private readonly onFindings: ((sessionInfo: PasteSessionInfo) => void) | undefined;
+  private readonly onSessionInvalidated: ((sessionId: string, editor: HTMLTextAreaElement) => void) | undefined;
 
   constructor(options: AdapterOptions = {}) {
     this.detectFn = options.detectFn ?? detect;
     this.redactFn = options.redactFn ?? redact;
     this.onFindings = options.onFindings;
+    this.onSessionInvalidated = options.onSessionInvalidated;
   }
 
   public getActiveSession(editor: HTMLTextAreaElement): PasteSession | undefined {
@@ -50,9 +53,10 @@ export class PasteSessionCoordinator {
 
   /**
    * Centralized disposal helper: cancels timers, removes session mappings,
-   * transitions status, and clears sensitive in-memory strings.
+   * transitions status, notifies invalidation listeners, and clears sensitive in-memory strings.
    */
   public disposeSession(session: PasteSession, status: SessionStatus = 'dismissed'): void {
+    const wasActive = session.status === 'active';
     const ttlTimer = this.sessionTtlTimeouts.get(session.id);
     if (ttlTimer !== undefined) {
       clearTimeout(ttlTimer);
@@ -65,6 +69,10 @@ export class PasteSessionCoordinator {
     }
 
     disposePasteSession(session, status);
+
+    if (wasActive && typeof this.onSessionInvalidated === 'function') {
+      this.onSessionInvalidated(session.id, session.editor);
+    }
   }
 
   public handlePasteEvent(event: ClipboardEvent): void {

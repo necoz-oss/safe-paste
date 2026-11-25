@@ -1,12 +1,37 @@
 import { describe, expect, it } from 'vitest';
 import {
   isSupportedGitHubEditor,
+  isGitHubIssuePage,
   extractPastedPlaintext,
   isTrustedEvent,
   SUPPORTED_GITHUB_EDITOR_SELECTORS,
+  MODERN_GITHUB_EDITOR_CONTAINER_SELECTORS,
 } from '../../src/adapter/editor';
 
 describe('Adapter: Editor Recognition & Event Helpers', () => {
+  describe('isGitHubIssuePage', () => {
+    it('matches GitHub issue and pull request URLs', () => {
+      expect(isGitHubIssuePage('/necoz-oss/safe-paste/issues/6')).toBe(true);
+      expect(isGitHubIssuePage('/necoz-oss/safe-paste/issues/new')).toBe(true);
+      expect(isGitHubIssuePage('/necoz-oss/safe-paste/issues')).toBe(true);
+      expect(isGitHubIssuePage('/necoz-oss/safe-paste/pull/13')).toBe(true);
+      expect(isGitHubIssuePage('/org/repo/issues/100?tab=comments')).toBe(true);
+    });
+
+    it('rejects URLs outside of issue and pull request scope', () => {
+      expect(isGitHubIssuePage('/necoz-oss/safe-paste/settings')).toBe(false);
+      expect(isGitHubIssuePage('/necoz-oss/safe-paste')).toBe(false);
+      expect(isGitHubIssuePage('/settings/profile')).toBe(false);
+      expect(isGitHubIssuePage('/necoz-oss/safe-paste/issues-archive')).toBe(false);
+      expect(isGitHubIssuePage('/issues/123')).toBe(false);
+    });
+
+    it('allows blank or unconfigured location for tests by default', () => {
+      expect(isGitHubIssuePage('')).toBe(true);
+      expect(isGitHubIssuePage('/')).toBe(true);
+    });
+  });
+
   describe('isSupportedGitHubEditor', () => {
     it('identifies GitHub issue and comment textareas by selector matching', () => {
       for (const selector of SUPPORTED_GITHUB_EDITOR_SELECTORS) {
@@ -15,6 +40,58 @@ describe('Adapter: Editor Recognition & Event Helpers', () => {
           matches: (sel: string) => sel === selector,
         };
         expect(isSupportedGitHubEditor(mockTextarea)).toBe(true);
+      }
+    });
+
+    it('identifies modern GitHub CommentBox textareas inside verified containers', () => {
+      // Modern Primer CommentBox with dynamic ID and Primer class (as reported on /issues/6)
+      const modernEditor = {
+        tagName: 'TEXTAREA',
+        id: '_r_41_',
+        className: 'prc-Textarea-TextArea-snlco',
+        matches: () => false,
+        closest: (selector: string) =>
+          selector === '[class*="CommentBox"]' ? { className: 'CommentBox_I-i-2w2x' } : null,
+      };
+      expect(isSupportedGitHubEditor(modernEditor)).toBe(true);
+
+      for (const containerSelector of MODERN_GITHUB_EDITOR_CONTAINER_SELECTORS) {
+        const textareaInContainer = {
+          tagName: 'TEXTAREA',
+          id: '_r_dynamic_',
+          matches: () => false,
+          closest: (selector: string) => (selector === containerSelector ? {} : null),
+        };
+        expect(isSupportedGitHubEditor(textareaInContainer)).toBe(true);
+      }
+    });
+
+    it('rejects modern CommentBox textareas when located on a non-issue page', () => {
+      const modernEditor = {
+        tagName: 'TEXTAREA',
+        id: '_r_41_',
+        className: 'prc-Textarea-TextArea-snlco',
+        matches: () => false,
+        closest: (selector: string) =>
+          selector === '[class*="CommentBox"]' ? { className: 'CommentBox_I-i-2w2x' } : null,
+      };
+
+      // Explicit pathname outside issue scope
+      expect(isSupportedGitHubEditor(modernEditor, '/settings/profile')).toBe(false);
+      expect(isSupportedGitHubEditor(modernEditor, '/necoz-oss/safe-paste/settings')).toBe(false);
+
+      // Environment window.location mock
+      const globalScope = globalThis as unknown as {
+        window?: { location?: { pathname?: string | undefined } | undefined } | undefined;
+      };
+      const originalWindow = globalScope.window;
+      try {
+        globalScope.window = {
+          location: { pathname: '/settings/profile' },
+        };
+        expect(isSupportedGitHubEditor(modernEditor)).toBe(false);
+      } finally {
+        globalScope.window = originalWindow;
       }
     });
 

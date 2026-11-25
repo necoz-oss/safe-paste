@@ -174,6 +174,49 @@ describe('Adapter: PasteSessionCoordinator', () => {
     expect(coordinator.getActiveSession(editor)).toBeUndefined();
   });
 
+  it('notifies onSessionInvalidated callback when an active session is invalidated by a new paste', async () => {
+    const editor = createMockEditor('');
+    const invalidated: { id: string; editor: HTMLTextAreaElement }[] = [];
+
+    const mockFindings = [
+      {
+        id: 'f1',
+        category: 'github_pat_classic' as const,
+        range: { start: 0, end: 12 },
+        mask: 'ghp_••••••••',
+        replacementText: '[REDACTED]',
+      },
+    ];
+
+    const coordinator = new PasteSessionCoordinator({
+      detectFn: (text) =>
+        text.includes('secret')
+          ? { status: 'findings', findings: mockFindings }
+          : { status: 'clean', findings: [] },
+      onSessionInvalidated: (id, ed) => {
+        invalidated.push({ id, editor: ed });
+      },
+    });
+
+    const { event: event1 } = createMockPasteEvent(editor, 'secret');
+    coordinator.handlePasteEvent(event1);
+    editor.value = 'secret';
+    await waitForDeferredTask();
+
+    const session = coordinator.getActiveSession(editor);
+    expect(session).toBeDefined();
+    const sessionId = session!.id;
+    expect(invalidated.length).toBe(0);
+
+    // Subsequent clean paste immediately invalidates prior session
+    const { event: event2 } = createMockPasteEvent(editor, 'clean text');
+    coordinator.handlePasteEvent(event2);
+
+    expect(invalidated.length).toBe(1);
+    expect(invalidated[0]?.id).toBe(sessionId);
+    expect(invalidated[0]?.editor).toBe(editor);
+  });
+
   it('cancels pending paste callback if another paste occurs before macrotask executes', async () => {
     const editor = createMockEditor('');
     let detectCalls = 0;
