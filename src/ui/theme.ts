@@ -7,6 +7,7 @@
 export const BANNER_STYLES = {
   container: `
     box-sizing: border-box;
+    width: 100%;
     margin: 8px 0;
     padding: 12px 14px;
     border-radius: 6px;

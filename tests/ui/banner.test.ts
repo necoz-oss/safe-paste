@@ -297,4 +297,27 @@ describe('UI Banner: mountWarningBanner', () => {
       expect(dismissWarningBanner(editor)).toBe(false);
     });
   });
+
+  it('mounts banner outside Primer span/Textarea wrapper to preserve editor width', () => {
+    const commentBox = new MockElement('div');
+    const textareaWrapper = new MockElement('span') as MockElement & { className?: string };
+    textareaWrapper.className = 'prc-Textarea-TextAreaWrapper-xyz';
+    const footer = new MockElement('div');
+
+    commentBox.appendChild(textareaWrapper);
+    commentBox.appendChild(footer);
+
+    const wrappedEditor = createMockEditor(textareaWrapper);
+    const session = createMockSessionInfo(wrappedEditor, [mockFindingClassic]);
+
+    const handle = mountWarningBanner({
+      session,
+      doc,
+      onRedact: vi.fn(),
+    });
+
+    const bannerElem = handle.element as unknown as MockElement;
+    expect(textareaWrapper.children).not.toContain(bannerElem);
+    expect(commentBox.children).toEqual([textareaWrapper, bannerElem, footer]);
+  });
 });

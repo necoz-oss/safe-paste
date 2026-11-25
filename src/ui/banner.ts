@@ -6,6 +6,73 @@ import type { WarningBannerHandle, WarningBannerOptions } from './types';
 // Tracks the current active banner for each editor to prevent duplicates
 const activeBanners = new WeakMap<HTMLTextAreaElement, WarningBannerHandle>();
 
+function isHorizontalOrTextareaWrapper(element: HTMLElement): boolean {
+  const tag = element.tagName?.toUpperCase();
+  if (tag === 'SPAN') {
+    return true;
+  }
+
+  if (typeof element.className === 'string' && /Textarea|TextArea/i.test(element.className)) {
+    return true;
+  }
+
+  if (typeof getComputedStyle === 'function') {
+    const style = getComputedStyle(element);
+    if (
+      style.display === 'inline' ||
+      style.display === 'inline-block' ||
+      style.display === 'inline-flex'
+    ) {
+      return true;
+    }
+    if (
+      style.display === 'flex' &&
+      style.flexDirection !== 'column' &&
+      style.flexDirection !== 'column-reverse'
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function resolveMountLocation(
+  editor: HTMLTextAreaElement,
+  explicitContainer?: HTMLElement
+): { mountTarget: HTMLElement | null; referenceNode: Node | null } {
+  if (explicitContainer) {
+    return {
+      mountTarget: explicitContainer,
+      referenceNode: editor.parentElement === explicitContainer ? editor.nextSibling : null,
+    };
+  }
+
+  let anchor: HTMLElement = editor;
+  for (let depth = 0; depth < 6; depth += 1) {
+    const parent = anchor.parentElement;
+    if (!parent) {
+      break;
+    }
+    const parentTag = parent.tagName?.toUpperCase();
+    if (parentTag === 'BODY' || parentTag === 'HTML') {
+      break;
+    }
+    if (!isHorizontalOrTextareaWrapper(parent)) {
+      return {
+        mountTarget: parent,
+        referenceNode: anchor.nextSibling,
+      };
+    }
+    anchor = parent;
+  }
+
+  return {
+    mountTarget: anchor.parentElement,
+    referenceNode: anchor.nextSibling,
+  };
+}
+
 /**
  * Creates and mounts a non-blocking warning banner near the target editor.
  * Renders findings with masked previews, provides one-click redact and dismiss,
@@ -116,11 +183,11 @@ export function mountWarningBanner(options: WarningBannerOptions): WarningBanner
   actions.appendChild(dismissBtn);
   banner.appendChild(actions);
 
-  // 3. Mount in DOM
-  const mountTarget = options.container ?? editor.parentElement;
+  // 3. Mount in DOM (outside horizontal/inline textarea wrappers so editing width is preserved)
+  const { mountTarget, referenceNode } = resolveMountLocation(editor, options.container);
   if (mountTarget) {
-    if (editor.nextSibling && editor.parentElement === mountTarget) {
-      mountTarget.insertBefore(banner, editor.nextSibling);
+    if (referenceNode) {
+      mountTarget.insertBefore(banner, referenceNode);
     } else {
       mountTarget.appendChild(banner);
     }
