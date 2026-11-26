@@ -38,6 +38,16 @@ npm run check
 
 Only `https://github.com/*` is matched. The manifest requests no additional API permissions and has no background worker. A site-access notice for GitHub is expected. See Chrome's [unpacked extension instructions](https://developer.chrome.com/docs/extensions/get-started/tutorial/hello-world#load-unpacked).
 
+## Privacy and safety
+
+SafePaste is designed around strict privacy and safety requirements:
+- **No Network Requests:** SafePaste initiates zero outbound network traffic, telemetry, analytics, or external API calls.
+- **No Persistent Storage:** No storage permissions, cookies, `localStorage`, or `chrome.storage`. All operations run in transient memory with a 60-second session TTL.
+- **Zero Secret Retention:** Downstream finding data structures and UI never retain or render raw secrets in the DOM, using fixed-width masks (`ghp_••••••••`).
+- **Best-Effort & Non-Blocking:** Native paste is unhindered; detection is best-effort. Redacting text in a form field does not revoke a compromised credential on GitHub.
+
+Read the complete [Privacy and Safety Requirements](docs/privacy-and-safety.md) and release verification checklist before contributing or releasing.
+
 ## Source boundaries
 
 - `src/core/`: pure TypeScript; no browser, GitHub, UI, network, or storage dependencies. API design remains in [Issue #3](https://github.com/necoz-oss/safe-paste/issues/3).
