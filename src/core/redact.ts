@@ -1,77 +1,7 @@
-import type { RedactionResult, RedactionTarget, TextRange } from './types';
+import { validateRange } from './range';
+import type { RedactionResult, RedactionTarget } from './types';
 
-function isLeadingSurrogate(code: number): boolean {
-  return code >= 0xd800 && code <= 0xdbff;
-}
-
-function isTrailingSurrogate(code: number): boolean {
-  return code >= 0xdc00 && code <= 0xdfff;
-}
-
-/**
- * Validates range boundaries and ensures they do not split a Unicode surrogate pair.
- */
-export function validateRange(
-  range: TextRange,
-  sourceLength: number,
-  sourceText?: string
-):
-  | { readonly valid: true }
-  | {
-      readonly valid: false;
-      readonly reason: 'invalid_range' | 'surrogate_boundary_split';
-      readonly error: string;
-    } {
-  const { start, end } = range;
-
-  if (!Number.isInteger(start) || !Number.isInteger(end)) {
-    return {
-      valid: false,
-      reason: 'invalid_range',
-      error: `Range start and end must be integers; received start=${start}, end=${end}`,
-    };
-  }
-
-  if (start < 0 || end < start || end > sourceLength) {
-    return {
-      valid: false,
-      reason: 'invalid_range',
-      error: `Range [${start}, ${end}) is out of bounds for string of length ${sourceLength}`,
-    };
-  }
-
-  if (sourceText !== undefined) {
-    // Slicing inside a surrogate pair at start
-    if (
-      start > 0 &&
-      start < sourceLength &&
-      isTrailingSurrogate(sourceText.charCodeAt(start)) &&
-      isLeadingSurrogate(sourceText.charCodeAt(start - 1))
-    ) {
-      return {
-        valid: false,
-        reason: 'surrogate_boundary_split',
-        error: `Range start offset ${start} splits a Unicode surrogate pair`,
-      };
-    }
-
-    // Slicing inside a surrogate pair at end
-    if (
-      end > 0 &&
-      end < sourceLength &&
-      isTrailingSurrogate(sourceText.charCodeAt(end)) &&
-      isLeadingSurrogate(sourceText.charCodeAt(end - 1))
-    ) {
-      return {
-        valid: false,
-        reason: 'surrogate_boundary_split',
-        error: `Range end offset ${end} splits a Unicode surrogate pair`,
-      };
-    }
-  }
-
-  return { valid: true };
-}
+export { validateRange };
 
 /**
  * Deterministically replaces target ranges with replacement text, preserving 100% of
@@ -94,7 +24,7 @@ export function redact(
 
   let lastEnd = 0;
   for (const target of sortedTargets) {
-    const validation = validateRange(target.range, sourceText.length, sourceText);
+    const validation = validateRange(target.range, sourceText);
     if (!validation.valid) {
       return {
         success: false,

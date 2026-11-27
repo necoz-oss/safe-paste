@@ -51,7 +51,7 @@ describe('Core Detect Module', () => {
       },
     };
 
-    const result = detect('test string', {
+    const result = detect('test string with sufficient length', {
       rules: [syntheticRule],
       maxFindings: 5,
     });
@@ -86,7 +86,7 @@ describe('Core Detect Module', () => {
       },
     };
 
-    const result = detect('test string', {
+    const result = detect('test string of plenty characters length', {
       rules: [exactLimitRule],
       maxFindings: 5,
     });
@@ -151,7 +151,7 @@ describe('Core Detect Module', () => {
     };
 
     // Shared budget across all rules is 4
-    const result = detect('some text', {
+    const result = detect('some sufficiently long test text for scanning', {
       rules: [rule1, rule2, rule3],
       maxFindings: 4,
     });
@@ -213,5 +213,186 @@ describe('Core Detect Module', () => {
     expect(findingKeys.includes('rawSecret')).toBe(false);
     expect(findingKeys.includes('secret')).toBe(false);
     expect(findingKeys.includes('value')).toBe(false);
+  });
+
+  describe('Issue #15: Range Validation & Safe Failure Handling', () => {
+    it('rejects detection with failed status when candidate range is empty (start === end)', () => {
+      const emptyRangeRule: DetectorRule = {
+        id: 'empty_range_rule',
+        category: 'mock_cat',
+        *detect() {
+          yield {
+            id: 'err_1',
+            category: 'mock_cat',
+            range: { start: 5, end: 5 },
+            mask: '••••',
+            replacementText: '[REDACTED]',
+          };
+        },
+      };
+
+      const result = detect('test string here', { rules: [emptyRangeRule] });
+      expect(result.status).toBe('failed');
+      expect(result.findings).toEqual([]);
+      expect(result.failureDetails).toEqual({ reason: 'invalid_range' });
+    });
+
+    it('rejects detection when candidate range has negative start offset', () => {
+      const negativeStartRule: DetectorRule = {
+        id: 'negative_rule',
+        category: 'mock_cat',
+        *detect() {
+          yield {
+            id: 'err_neg',
+            category: 'mock_cat',
+            range: { start: -2, end: 4 },
+            mask: '••••',
+            replacementText: '[REDACTED]',
+          };
+        },
+      };
+
+      const result = detect('test string here', { rules: [negativeStartRule] });
+      expect(result.status).toBe('failed');
+      expect(result.findings).toEqual([]);
+      expect(result.failureDetails).toEqual({ reason: 'invalid_range' });
+    });
+
+    it('rejects detection when candidate range is out-of-bounds (end > text.length)', () => {
+      const oobRule: DetectorRule = {
+        id: 'oob_rule',
+        category: 'mock_cat',
+        *detect() {
+          yield {
+            id: 'err_oob',
+            category: 'mock_cat',
+            range: { start: 2, end: 9999 },
+            mask: '••••',
+            replacementText: '[REDACTED]',
+          };
+        },
+      };
+
+      const result = detect('short text', { rules: [oobRule] });
+      expect(result.status).toBe('failed');
+      expect(result.findings).toEqual([]);
+      expect(result.failureDetails).toEqual({ reason: 'invalid_range' });
+    });
+
+    it('rejects detection when candidate range splits a surrogate pair', () => {
+      // '🚀' is located at index 4 and 5
+      const text = 'test🚀token';
+      const surrogateSplitRule: DetectorRule = {
+        id: 'split_rule',
+        category: 'mock_cat',
+        *detect() {
+          yield {
+            id: 'err_split',
+            category: 'mock_cat',
+            range: { start: 5, end: 8 }, // start: 5 splits '🚀'
+            mask: '••••',
+            replacementText: '[REDACTED]',
+          };
+        },
+      };
+
+      const result = detect(text, { rules: [surrogateSplitRule] });
+      expect(result.status).toBe('failed');
+      expect(result.findings).toEqual([]);
+      expect(result.failureDetails).toEqual({ reason: 'invalid_range' });
+    });
+
+    it('does NOT allow an invalid range to be absorbed by overlap resolution with a valid range', () => {
+      const validRule: DetectorRule = {
+        id: 'valid_rule',
+        category: 'mock_cat',
+        *detect() {
+          yield {
+            id: 'valid_1',
+            category: 'mock_cat',
+            range: { start: 0, end: 10 },
+            mask: '••••',
+            replacementText: '[REDACTED]',
+          };
+        },
+      };
+
+      const invalidOverlapRule: DetectorRule = {
+        id: 'invalid_overlap_rule',
+        category: 'mock_cat',
+        *detect() {
+          // Range has start > end, which could otherwise be silently covered by [0, 10)
+          yield {
+            id: 'invalid_1',
+            category: 'mock_cat',
+            range: { start: 8, end: 4 },
+            mask: '••••',
+            replacementText: '[REDACTED]',
+          };
+        },
+      };
+
+      const result = detect('hello world string', {
+        rules: [validRule, invalidOverlapRule],
+      });
+
+      // Entire detection MUST fail, not absorb the invalid range!
+      expect(result.status).toBe('failed');
+      expect(result.findings).toEqual([]);
+      expect(result.failureDetails).toEqual({ reason: 'invalid_range' });
+    });
+
+    it('safely handles rule runtime exceptions without leaking source or exception details', () => {
+      const sensitiveSecret = 'SUPER_SECRET_PAYLOAD_12345';
+      const crashingRule: DetectorRule = {
+        id: 'crashing_rule',
+        category: 'mock_cat',
+        detect(src: string) {
+          throw new Error(`Crash with sensitive text: ${src}`);
+        },
+      };
+
+      const result = detect(`User secret is: ${sensitiveSecret}`, {
+        rules: [crashingRule],
+      });
+
+      expect(result.status).toBe('failed');
+      expect(result.findings).toEqual([]);
+      expect(result.failureDetails).toEqual({
+        reason: 'rule_execution_failed',
+      });
+
+      // Verify no sensitive payload in serialized result
+      const serialized = JSON.stringify(result);
+      expect(serialized.includes(sensitiveSecret)).toBe(false);
+      expect(serialized.includes('Crash with sensitive text')).toBe(false);
+    });
+
+    it('safely handles generator-yield runtime exceptions', () => {
+      const throwingGeneratorRule: DetectorRule = {
+        id: 'generator_throw_rule',
+        category: 'mock_cat',
+        *detect() {
+          yield {
+            id: 'ok_1',
+            category: 'mock_cat',
+            range: { start: 0, end: 3 },
+            mask: '••••',
+            replacementText: '[REDACTED]',
+          };
+          throw new TypeError('Unexpected generator failure');
+        },
+      };
+
+      const result = detect('some normal input', {
+        rules: [throwingGeneratorRule],
+      });
+
+      expect(result.status).toBe('failed');
+      expect(result.findings).toEqual([]);
+      expect(result.failureDetails).toEqual({
+        reason: 'rule_execution_failed',
+      });
+    });
   });
 });

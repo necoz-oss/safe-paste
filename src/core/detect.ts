@@ -1,4 +1,5 @@
 import { resolveOverlaps } from './overlap';
+import { validateRange } from './range';
 import { defaultMvpRules } from './rules/github_pat';
 import type {
   DetectionResult,
@@ -11,7 +12,8 @@ export const DEFAULT_MAX_FINDINGS = 50;
 
 /**
  * Pure orchestrator function to execute detector rules against an input string.
- * Enforces input budgets, caps findings count, and deterministically resolves overlaps.
+ * Enforces input budgets, caps findings count, validates candidate ranges,
+ * safely handles rule execution failures, and deterministically resolves overlaps.
  */
 export function detect(
   text: string,
@@ -52,19 +54,42 @@ export function detect(
   const rawFindings: Finding[] = [];
 
   for (const rule of rules) {
-    for (const finding of rule.detect(text)) {
-      if (rawFindings.length >= maxFindings) {
-        return {
-          status: 'limit_exceeded',
-          findings: [],
-          limitDetails: {
-            reason: 'too_many_findings',
-            limit: maxFindings,
-            actual: maxFindings + 1,
-          },
-        };
+    try {
+      for (const finding of rule.detect(text)) {
+        // Issue #15: Validate candidate range before overlap resolution
+        const validation = validateRange(finding.range, text);
+        if (!validation.valid) {
+          return {
+            status: 'failed',
+            findings: [],
+            failureDetails: {
+              reason: 'invalid_range',
+            },
+          };
+        }
+
+        if (rawFindings.length >= maxFindings) {
+          return {
+            status: 'limit_exceeded',
+            findings: [],
+            limitDetails: {
+              reason: 'too_many_findings',
+              limit: maxFindings,
+              actual: maxFindings + 1,
+            },
+          };
+        }
+        rawFindings.push(finding);
       }
-      rawFindings.push(finding);
+    } catch {
+      // Issue #15: Rule execution failure must return safe failure without leaking sensitive input
+      return {
+        status: 'failed',
+        findings: [],
+        failureDetails: {
+          reason: 'rule_execution_failed',
+        },
+      };
     }
   }
 

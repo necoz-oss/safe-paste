@@ -71,10 +71,10 @@ The `Finding` object deliberately does **not** store the raw matched secret stri
 
 ---
 
-### 2.3 Detection Result & Budget Limits
+### 2.3 Detection Result, Budget Limits & Failure Safety
 
 ```typescript
-export type DetectionStatus = 'clean' | 'findings' | 'limit_exceeded';
+export type DetectionStatus = 'clean' | 'findings' | 'limit_exceeded' | 'failed';
 
 export interface DetectionLimitDetails {
   readonly reason: 'input_too_large' | 'too_many_findings';
@@ -82,14 +82,29 @@ export interface DetectionLimitDetails {
   readonly actual: number;
 }
 
+export type DetectionFailureReason =
+  | 'invalid_range'
+  | 'rule_execution_failed';
+
+export interface DetectionFailureDetails {
+  readonly reason: DetectionFailureReason;
+}
+
 export interface DetectionResult {
   readonly status: DetectionStatus;
   readonly findings: readonly Finding[];
   readonly limitDetails?: DetectionLimitDetails;
+  readonly failureDetails?: DetectionFailureDetails;
 }
 ```
 
 If an input exceeds the configured input budget (e.g. 100 KiB / 102,400 UTF-16 code units) or findings exceed a safe threshold, detection halts conservatively. In accordance with `docs/design.md`, incomplete or capped results must not be offered for automatic redaction to prevent partial/unsafe replacement.
+
+**Range Validation & Safe Failure Boundary (Issue #15):**
+- Candidate ranges returned by detector rules are validated before overlap resolution (`0 <= start < end <= text.length`, integer offsets, and surrogate-pair preservation).
+- If any rule yields an invalid range (or an unhandled runtime exception is thrown during rule execution), detection immediately fails with `status: 'failed'`.
+- Failed detection returns an empty findings list (`findings: []`) to prevent partial or corrupted redaction.
+- Exception details and raw source snippets are strictly withheld from `failureDetails` to prevent credential exposure.
 
 ---
 

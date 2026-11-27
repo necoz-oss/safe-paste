@@ -36,7 +36,11 @@ export interface Finding {
 /**
  * Status of detection execution.
  */
-export type DetectionStatus = 'clean' | 'findings' | 'limit_exceeded';
+export type DetectionStatus =
+  | 'clean'
+  | 'findings'
+  | 'limit_exceeded'
+  | 'failed';
 
 /**
  * Details provided when a processing budget or cap is reached.
@@ -48,12 +52,29 @@ export interface DetectionLimitDetails {
 }
 
 /**
+ * Specific reason why detection failed.
+ */
+export type DetectionFailureReason =
+  | 'invalid_range'
+  | 'rule_execution_failed';
+
+/**
+ * Details provided when detection execution fails.
+ * Deliberately excludes raw source content, stack traces, and exception details
+ * to guarantee that sensitive information is never leaked.
+ */
+export interface DetectionFailureDetails {
+  readonly reason: DetectionFailureReason;
+}
+
+/**
  * The deterministic outcome of running detection over an input string.
  */
 export interface DetectionResult {
   readonly status: DetectionStatus;
   readonly findings: readonly Finding[];
   readonly limitDetails?: DetectionLimitDetails;
+  readonly failureDetails?: DetectionFailureDetails;
 }
 
 /**
