@@ -13,7 +13,8 @@ export const DEFAULT_MAX_FINDINGS = 50;
 /**
  * Pure orchestrator function to execute detector rules against an input string.
  * Enforces input budgets, caps findings count, validates candidate ranges,
- * safely handles rule execution failures, and deterministically resolves overlaps.
+ * safely handles rule execution failures, centrally constructs Finding metadata,
+ * and deterministically resolves overlaps.
  */
 export function detect(
   text: string,
@@ -55,9 +56,9 @@ export function detect(
 
   for (const rule of rules) {
     try {
-      for (const finding of rule.detect(text)) {
+      for (const range of rule.detect(text)) {
         // Issue #15: Validate candidate range before overlap resolution
-        const validation = validateRange(finding.range, text);
+        const validation = validateRange(range, text);
         if (!validation.valid) {
           return {
             status: 'failed',
@@ -79,7 +80,15 @@ export function detect(
             },
           };
         }
-        rawFindings.push(finding);
+
+        // Issue #16: Core centrally constructs Finding metadata from safe descriptors and validated ranges
+        rawFindings.push({
+          id: `${rule.id}_${range.start}_${range.end}`,
+          category: rule.category,
+          range: { start: range.start, end: range.end },
+          mask: rule.mask,
+          replacementText: rule.replacementText,
+        });
       }
     } catch {
       // Issue #15: Rule execution failure must return safe failure without leaking sensitive input

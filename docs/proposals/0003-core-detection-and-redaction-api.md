@@ -111,10 +111,15 @@ If an input exceeds the configured input budget (e.g. 100 KiB / 102,400 UTF-16 c
 ### 2.4 Detector Rules & Orchestrator
 
 ```typescript
-export interface DetectorRule {
+export interface DetectorRuleDescriptor {
   readonly id: string;
   readonly category: FindingCategory;
-  detect(text: string): readonly Finding[];
+  readonly mask: string;
+  readonly replacementText: string;
+}
+
+export interface DetectorRule extends DetectorRuleDescriptor {
+  detect(text: string): Iterable<TextRange>;
 }
 
 export interface DetectOptions {
@@ -125,6 +130,17 @@ export interface DetectOptions {
 
 export function detect(text: string, options?: DetectOptions): DetectionResult;
 ```
+
+**Centralized Finding Metadata Generation (Issue #16):**
+- Rules are strictly responsible for yielding candidate `TextRange` intervals (`[start, end)`) matching their static patterns.
+- Rules do NOT construct `Finding` objects.
+- `Core` validates returned ranges and centrally constructs public `Finding` objects using only the rule's static descriptor and validated bounds:
+  - `id`: Deterministic identifier `${rule.id}_${range.start}_${range.end}`
+  - `category`: `rule.category`
+  - `range`: `{ start: range.start, end: range.end }`
+  - `mask`: `rule.mask`
+  - `replacementText`: `rule.replacementText`
+- Additional or unexpected runtime properties from rule return values are strictly discarded, guaranteeing Zero Secret Retention and preventing secret leakage into finding metadata.
 
 ---
 

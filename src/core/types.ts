@@ -78,12 +78,23 @@ export interface DetectionResult {
 }
 
 /**
- * A pure rule that scans a string and returns candidate findings.
+ * Static metadata defining how a detection rule presents findings.
+ * Predefined and independent of runtime input or raw secrets.
  */
-export interface DetectorRule {
+export interface DetectorRuleDescriptor {
   readonly id: string;
   readonly category: FindingCategory;
-  detect(text: string): Iterable<Finding>;
+  readonly mask: string;
+  readonly replacementText: string;
+}
+
+/**
+ * A pure rule that scans a string and returns candidate UTF-16 code unit ranges.
+ * The rule is NOT responsible for constructing Finding objects; Core constructs
+ * public Finding metadata centrally from validated ranges and the rule's safe descriptor.
+ */
+export interface DetectorRule extends DetectorRuleDescriptor {
+  detect(text: string): Iterable<TextRange>;
 }
 
 /**

@@ -1,4 +1,4 @@
-import type { DetectorRule, Finding } from '../types';
+import type { DetectorRule, TextRange } from '../types';
 
 /**
  * Regular expression for GitHub Classic Personal Access Tokens.
@@ -32,23 +32,21 @@ export const GITHUB_PAT_FINE_GRAINED_REGEX =
 
 /**
  * Detector rule for GitHub Classic Personal Access Tokens (ghp_...).
+ * Yields matched UTF-16 code unit intervals without constructing Finding objects.
  */
 export const githubPatClassicRule: DetectorRule = {
   id: 'github_pat_classic',
   category: 'github_pat_classic',
-  *detect(text: string): Iterable<Finding> {
+  mask: 'ghp_••••••••',
+  replacementText: '[REDACTED_GITHUB_PAT]',
+  *detect(text: string): Iterable<TextRange> {
     const regex = new RegExp(GITHUB_PAT_CLASSIC_REGEX.source, 'g');
     let match: RegExpExecArray | null;
 
     while ((match = regex.exec(text)) !== null) {
-      const start = match.index;
-      const end = start + match[0].length;
       yield {
-        id: `github_pat_classic_${start}_${end}`,
-        category: 'github_pat_classic',
-        range: { start, end },
-        mask: 'ghp_••••••••',
-        replacementText: '[REDACTED_GITHUB_PAT]',
+        start: match.index,
+        end: match.index + match[0].length,
       };
     }
   },
@@ -56,23 +54,21 @@ export const githubPatClassicRule: DetectorRule = {
 
 /**
  * Detector rule for GitHub Fine-grained Personal Access Tokens (github_pat_...).
+ * Yields matched UTF-16 code unit intervals without constructing Finding objects.
  */
 export const githubPatFineGrainedRule: DetectorRule = {
   id: 'github_pat_fine_grained',
   category: 'github_pat_fine_grained',
-  *detect(text: string): Iterable<Finding> {
+  mask: 'github_pat_••••••••',
+  replacementText: '[REDACTED_GITHUB_PAT]',
+  *detect(text: string): Iterable<TextRange> {
     const regex = new RegExp(GITHUB_PAT_FINE_GRAINED_REGEX.source, 'g');
     let match: RegExpExecArray | null;
 
     while ((match = regex.exec(text)) !== null) {
-      const start = match.index;
-      const end = start + match[0].length;
       yield {
-        id: `github_pat_fine_grained_${start}_${end}`,
-        category: 'github_pat_fine_grained',
-        range: { start, end },
-        mask: 'github_pat_••••••••',
-        replacementText: '[REDACTED_GITHUB_PAT]',
+        start: match.index,
+        end: match.index + match[0].length,
       };
     }
   },
