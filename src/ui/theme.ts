@@ -6,7 +6,7 @@ export const BANNER_CSS = `
   --sp-fill: #171917;
   box-sizing: border-box;
   width: 100%; min-width: 0; margin: 0; padding: 14px 16px;
-  color: #7caa4a;
+  color: #f0f1eb;
   font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background-image:
     linear-gradient(var(--sp-frame) 0 0), linear-gradient(var(--sp-frame) 0 0),
@@ -39,9 +39,9 @@ export const BANNER_CSS = `
 [data-safepaste-banner] .sp-title { display: inline-block; max-width: 100%; font-weight: 700; animation: safepaste-type 450ms steps(25, end) both; }
 [data-safepaste-banner] .sp-findings { margin: 6px 0; padding: 0; list-style: none; }
 [data-safepaste-banner] .sp-findings li { margin: 2px 0; overflow-wrap: anywhere; }
-[data-safepaste-banner] .sp-category { color: #a9c68b; font-size: 12px; }
+[data-safepaste-banner] .sp-category { color: #d0d3cc; font-size: 12px; }
 [data-safepaste-banner] code { font: 12px ui-monospace, SFMono-Regular, Consolas, monospace; }
-[data-safepaste-banner] .sp-disclaimer { color: #a9c68b; font-size: 11px; }
+[data-safepaste-banner] .sp-disclaimer { color: #d0d3cc; font-size: 11px; }
 [data-safepaste-banner] .sp-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 [data-safepaste-banner] button {
   --sp-button-edge: #a9c68b;
@@ -105,14 +105,14 @@ export const BANNER_CSS = `
 [data-safepaste-banner] button::before, [data-safepaste-banner] button::after { content: ''; position: absolute; pointer-events: none; }
 [data-safepaste-banner] button::before { inset: 0; z-index: -2; background: var(--sp-button-edge); clip-path: var(--sp-button-shell-shape); }
 [data-safepaste-banner] button::after { inset: 3px; z-index: -1; background: var(--sp-button-fill); clip-path: var(--sp-button-fill-shape); }
-[data-safepaste-banner] button:focus-visible { outline: 2px solid var(--focus-outlineColor, #0969da); outline-offset: 2px; }
-[data-safepaste-banner] .sp-redact { --sp-button-edge: var(--sp-frame); --sp-button-fill: #171917; color: #7caa4a; }
-[data-safepaste-banner] .sp-redact:hover:not(:disabled) { --sp-button-fill: var(--sp-frame); color: #171917; }
-[data-safepaste-banner] .sp-redact:active:not(:disabled) { --sp-button-fill: #4f5b39; color: #fff; }
+[data-safepaste-banner] button:focus-visible { outline: 2px solid #f0f1eb; outline-offset: 2px; }
+[data-safepaste-banner] .sp-redact { --sp-button-edge: #a9c68b; --sp-button-fill: var(--sp-frame); color: #171917; }
+[data-safepaste-banner] .sp-redact:hover:not(:disabled) { --sp-button-fill: #9bc56e; }
+[data-safepaste-banner] .sp-redact:active:not(:disabled) { --sp-button-fill: #6b963f; }
 [data-safepaste-banner] .sp-redact:disabled { opacity: .6; cursor: default; }
-[data-safepaste-banner] .sp-dismiss { color: inherit; }
-[data-safepaste-banner] .sp-dismiss:hover { --sp-button-fill: #303a28; }
-[data-safepaste-banner] .sp-dismiss:active { --sp-button-edge: #a9c68b; }
+[data-safepaste-banner] .sp-dismiss { --sp-button-edge: #8c928d; --sp-button-fill: #303431; color: #e0e3df; }
+[data-safepaste-banner] .sp-dismiss:hover { --sp-button-fill: #464b47; }
+[data-safepaste-banner] .sp-dismiss:active { --sp-button-fill: #242724; --sp-button-edge: #c2c8c2; }
 [data-safepaste-banner] .sp-error { color: #ff9b92; font-size: 12px; margin-top: 6px; font-weight: 500; }
 @keyframes safepaste-pop { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes safepaste-type { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }

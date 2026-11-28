@@ -164,7 +164,9 @@ describe('UI Banner: mountWarningBanner', () => {
     expect(BANNER_CSS).toContain('.sp-dismiss:active');
     expect(BANNER_CSS).toContain('button:focus-visible');
     expect(BANNER_CSS).toContain('--sp-fill: #171917');
-    expect(BANNER_CSS).toContain('color: #7caa4a');
+    expect(BANNER_CSS).toContain('color: #f0f1eb');
+    expect(BANNER_CSS).toContain('--sp-button-fill: var(--sp-frame)');
+    expect(BANNER_CSS).toContain('--sp-button-fill: #303431');
   });
 
   it('executes onRedact and unmounts banner upon clicking Redact button', () => {
