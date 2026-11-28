@@ -155,14 +155,16 @@ describe('UI Banner: mountWarningBanner', () => {
   });
 
   it('uses a flush top edge and scoped pixel button states', () => {
-    expect(BANNER_CSS).toContain('margin: 0 0 8px');
-    expect(BANNER_CSS).toContain('--sp-button-shape: polygon(');
-    expect(BANNER_CSS).toContain('clip-path: var(--sp-button-shape)');
+    expect(BANNER_CSS).toContain('margin: 0;');
+    expect(BANNER_CSS).toContain('--sp-button-shell-shape: polygon(');
+    expect(BANNER_CSS).toContain('--sp-button-fill-shape: polygon(');
+    expect(BANNER_CSS).toContain('clip-path: var(--sp-button-shell-shape)');
+    expect(BANNER_CSS).toContain('clip-path: var(--sp-button-fill-shape)');
     expect(BANNER_CSS).toContain('.sp-redact:hover:not(:disabled)');
     expect(BANNER_CSS).toContain('.sp-dismiss:active');
     expect(BANNER_CSS).toContain('button:focus-visible');
-    expect(BANNER_CSS).toContain('var(--color-canvas-default, #ffffff)');
-    expect(BANNER_CSS).toContain('var(--color-canvas-subtle, #f6f8fa)');
+    expect(BANNER_CSS).toContain('--sp-fill: #171917');
+    expect(BANNER_CSS).toContain('color: #7caa4a');
   });
 
   it('executes onRedact and unmounts banner upon clicking Redact button', () => {
