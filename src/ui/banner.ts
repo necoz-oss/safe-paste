@@ -110,20 +110,37 @@ export function mountWarningBanner(options: WarningBannerOptions): WarningBanner
 
   // The title is present immediately; CSS only clips its visual presentation.
   const header = doc.createElement('div');
-  const brand = doc.createElement('div');
-  brand.setAttribute('class', 'sp-brand');
-  const mark = doc.createElement('span');
-  mark.setAttribute('class', 'sp-brand-mark');
-  mark.setAttribute('aria-hidden', 'true');
-  mark.textContent = '■ ';
-  brand.appendChild(mark);
-  brand.appendChild(doc.createTextNode('SafePaste'));
+  header.setAttribute('class', 'sp-header');
+  const heading = doc.createElement('div');
+  heading.setAttribute('class', 'sp-heading');
+
+  // Lucide Shield Alert, ISC licensed; see THIRD_PARTY_NOTICES.md.
+  const icon = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  icon.setAttribute('class', 'sp-icon');
+  icon.setAttribute('viewBox', '0 0 24 24');
+  icon.setAttribute('fill', 'none');
+  icon.setAttribute('stroke', 'currentColor');
+  icon.setAttribute('stroke-width', '2');
+  icon.setAttribute('stroke-linecap', 'round');
+  icon.setAttribute('stroke-linejoin', 'round');
+  icon.setAttribute('aria-hidden', 'true');
+  for (const d of ['M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10', 'M12 8v4', 'M12 16h.01']) {
+    const path = doc.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', d);
+    icon.appendChild(path);
+  }
+
   const headerTitle = doc.createElement('span');
   headerTitle.setAttribute('class', 'sp-title');
   headerTitle.textContent = 'Potential secret detected';
+  const brand = doc.createElement('span');
+  brand.setAttribute('class', 'sp-brand');
+  brand.textContent = 'SafePaste';
   const count = session.findings.length;
+  heading.appendChild(icon);
+  heading.appendChild(headerTitle);
+  header.appendChild(heading);
   header.appendChild(brand);
-  header.appendChild(headerTitle);
   banner.appendChild(header);
 
   // 2.2 Findings list (category + masked preview)

@@ -113,6 +113,9 @@ describe('UI Banner: mountWarningBanner', () => {
     const title = banner.querySelector('[class=sp-title]');
     const styles = banner.querySelector('style')?.textContent ?? '';
     expect(title?.textContent).toBe('Potential secret detected');
+    expect(banner.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
+    expect(banner.querySelector('svg')?.querySelectorAll('path')).toHaveLength(3);
+    expect(banner.querySelector('[class=sp-brand]')?.textContent).toBe('SafePaste');
     expect(styles).toContain('prefers-reduced-motion: reduce');
     expect(styles).toContain('animation: none');
     expect(styles).toContain('steps(25, end)');
@@ -165,7 +168,7 @@ describe('UI Banner: mountWarningBanner', () => {
     expect(BANNER_CSS).toContain('button:focus-visible');
     expect(BANNER_CSS).toContain('--sp-fill: #171917');
     expect(BANNER_CSS).toContain('color: #f0f1eb');
-    expect(BANNER_CSS).toContain('--sp-button-fill: var(--sp-frame)');
+    expect(BANNER_CSS).toContain('--sp-button-fill: #171917; color: #7caa4a');
     expect(BANNER_CSS).toContain('--sp-button-fill: #303431');
   });
 

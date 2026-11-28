@@ -34,8 +34,10 @@ export const BANNER_CSS = `
     9px 3px, 6px 6px, 3px 9px, 6px calc(100% - 6px), 9px calc(100% - 3px);
   animation: safepaste-pop 160ms steps(3, end) both;
 }
-[data-safepaste-banner] .sp-brand { color: #a9c68b; font: 700 11px/1.4 ui-monospace, monospace; letter-spacing: .04em; }
-[data-safepaste-banner] .sp-brand-mark { color: #7caa4a; }
+[data-safepaste-banner] .sp-header { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 2px 12px; }
+[data-safepaste-banner] .sp-heading { display: flex; align-items: flex-start; gap: 8px; flex: 1 1 190px; min-width: 0; }
+[data-safepaste-banner] .sp-icon { width: 17px; height: 17px; flex: none; color: var(--sp-frame); margin-top: 1px; }
+[data-safepaste-banner] .sp-brand { margin-left: auto; color: #a9c68b; font: 700 11px/1.4 ui-monospace, monospace; letter-spacing: .04em; }
 [data-safepaste-banner] .sp-title { display: inline-block; max-width: 100%; font-weight: 700; animation: safepaste-type 450ms steps(25, end) both; }
 [data-safepaste-banner] .sp-findings { margin: 6px 0; padding: 0; list-style: none; }
 [data-safepaste-banner] .sp-findings li { margin: 2px 0; overflow-wrap: anywhere; }
@@ -106,9 +108,9 @@ export const BANNER_CSS = `
 [data-safepaste-banner] button::before { inset: 0; z-index: -2; background: var(--sp-button-edge); clip-path: var(--sp-button-shell-shape); }
 [data-safepaste-banner] button::after { inset: 3px; z-index: -1; background: var(--sp-button-fill); clip-path: var(--sp-button-fill-shape); }
 [data-safepaste-banner] button:focus-visible { outline: 2px solid #f0f1eb; outline-offset: 2px; }
-[data-safepaste-banner] .sp-redact { --sp-button-edge: #a9c68b; --sp-button-fill: var(--sp-frame); color: #171917; }
-[data-safepaste-banner] .sp-redact:hover:not(:disabled) { --sp-button-fill: #9bc56e; }
-[data-safepaste-banner] .sp-redact:active:not(:disabled) { --sp-button-fill: #6b963f; }
+[data-safepaste-banner] .sp-redact { --sp-button-edge: var(--sp-frame); --sp-button-fill: #171917; color: #7caa4a; }
+[data-safepaste-banner] .sp-redact:hover:not(:disabled) { --sp-button-fill: var(--sp-frame); color: #171917; }
+[data-safepaste-banner] .sp-redact:active:not(:disabled) { --sp-button-fill: #4f5b39; color: #fff; }
 [data-safepaste-banner] .sp-redact:disabled { opacity: .6; cursor: default; }
 [data-safepaste-banner] .sp-dismiss { --sp-button-edge: #8c928d; --sp-button-fill: #303431; color: #e0e3df; }
 [data-safepaste-banner] .sp-dismiss:hover { --sp-button-fill: #464b47; }
