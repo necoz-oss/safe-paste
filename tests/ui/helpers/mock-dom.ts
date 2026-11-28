@@ -175,6 +175,9 @@ export function createMockDocument(): Document {
     createElement(tagName: string) {
       return new MockElement(tagName);
     },
+    createElementNS(_namespace: string, tagName: string) {
+      return new MockElement(tagName);
+    },
     createTextNode(text: string) {
       return new MockTextNode(text);
     },

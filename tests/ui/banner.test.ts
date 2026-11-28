@@ -7,6 +7,7 @@ import {
   mountWarningBanner,
 } from '../../src/ui/banner';
 import { createMockDocument, MockElement } from './helpers/mock-dom';
+import { BANNER_CSS } from '../../src/ui/theme';
 
 function createMockEditor(parent: MockElement): HTMLTextAreaElement {
   const editor = new MockElement('textarea');
@@ -80,8 +81,8 @@ describe('UI Banner: mountWarningBanner', () => {
     // Verify children elements are mounted in container
     expect(container.children).toContain(bannerElem);
 
-    // Verify header title mentions finding count
-    expect(bannerElem.textContent).toContain('2 sensitive tokens detected in paste');
+    // The complete warning is present immediately, independently of animation.
+    expect(bannerElem.textContent).toContain('Potential secret detected');
 
     // Verify category labels and masks are present
     expect(bannerElem.textContent).toContain('GitHub Personal Access Token (Classic)');
@@ -97,6 +98,78 @@ describe('UI Banner: mountWarningBanner', () => {
     expect(buttons.length).toBe(2);
     expect(buttons[0]?.textContent).toBe('Redact');
     expect(buttons[1]?.textContent).toBe('Dismiss');
+  });
+
+  it('keeps motion decorative and cleans up timers and listeners on dismissal', () => {
+    const onDismiss = vi.fn();
+    const handle = mountWarningBanner({
+      session: createMockSessionInfo(editor, [mockFindingClassic]),
+      doc,
+      container: container as unknown as HTMLElement,
+      onRedact: vi.fn(),
+      onDismiss,
+    });
+    const banner = handle.element as unknown as MockElement;
+    const title = banner.querySelector('[class=sp-title]');
+    const styles = banner.querySelector('style')?.textContent ?? '';
+    expect(title?.textContent).toBe('Potential secret detected');
+    expect(banner.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
+    expect(banner.querySelector('svg')?.querySelectorAll('path')).toHaveLength(3);
+    expect(banner.querySelector('[class=sp-brand]')?.textContent).toBe('SafePaste');
+    expect(styles).toContain('prefers-reduced-motion: reduce');
+    expect(styles).toContain('animation: none');
+    expect(styles).toContain('steps(25, end)');
+    expect(banner.querySelectorAll('button').map((button) => button.textContent)).toEqual([
+      'Redact', 'Dismiss',
+    ]);
+    expect(vi.getTimerCount()).toBe(1); // TTL only; animation uses no timers.
+    handle.dismiss();
+    expect(vi.getTimerCount()).toBe(0);
+    (doc as unknown as MockElement).dispatchEvent({ type: 'keydown', key: 'Escape' });
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders only masked previews, never the pasted token', () => {
+    const rawToken = `ghp_${'a'.repeat(36)}`;
+    editor.value = rawToken;
+    const handle = mountWarningBanner({
+      session: createMockSessionInfo(editor, [mockFindingClassic]),
+      doc,
+      container: container as unknown as HTMLElement,
+      onRedact: vi.fn(),
+    });
+    expect(handle.element.textContent).toContain(mockFindingClassic.mask);
+    expect(handle.element.textContent).not.toContain(rawToken);
+    handle.dismiss();
+  });
+
+  it('clears the error dismissal timer when dismissed early', () => {
+    const handle = mountWarningBanner({
+      session: createMockSessionInfo(editor, [mockFindingClassic]),
+      doc,
+      container: container as unknown as HTMLElement,
+      onRedact: vi.fn().mockReturnValue({ success: false, error: 'Stale' }),
+    });
+    (handle.element as unknown as MockElement).querySelectorAll('button')[0]!
+      .dispatchEvent({ type: 'click', isTrusted: true });
+    expect(vi.getTimerCount()).toBe(2);
+    handle.dismiss();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('uses a flush top edge and scoped pixel button states', () => {
+    expect(BANNER_CSS).toContain('margin: 0;');
+    expect(BANNER_CSS).toContain('--sp-button-shell-shape: polygon(');
+    expect(BANNER_CSS).toContain('--sp-button-fill-shape: polygon(');
+    expect(BANNER_CSS).toContain('clip-path: var(--sp-button-shell-shape)');
+    expect(BANNER_CSS).toContain('clip-path: var(--sp-button-fill-shape)');
+    expect(BANNER_CSS).toContain('.sp-redact:hover:not(:disabled)');
+    expect(BANNER_CSS).toContain('.sp-dismiss:active');
+    expect(BANNER_CSS).toContain('button:focus-visible');
+    expect(BANNER_CSS).toContain('--sp-fill: #171917');
+    expect(BANNER_CSS).toContain('color: #f0f1eb');
+    expect(BANNER_CSS).toContain('--sp-button-fill: #171917; color: #7caa4a');
+    expect(BANNER_CSS).toContain('--sp-button-fill: #303431');
   });
 
   it('executes onRedact and unmounts banner upon clicking Redact button', () => {

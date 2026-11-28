@@ -1,6 +1,6 @@
 import type { ReplacementResult } from '../adapter/replacement';
 import { getCategoryLabel, getMaskedPreview } from './preview';
-import { BANNER_STYLES } from './theme';
+import { BANNER_CSS } from './theme';
 import type { WarningBannerHandle, WarningBannerOptions } from './types';
 
 // Tracks the current active banner for each editor to prevent duplicates
@@ -96,6 +96,7 @@ export function mountWarningBanner(options: WarningBannerOptions): WarningBanner
 
   let mounted = true;
   let timerId: ReturnType<typeof setTimeout> | undefined;
+  let errorTimerId: ReturnType<typeof setTimeout> | undefined;
 
   // 2. Build DOM elements purely using createElement and textContent
   const banner = doc.createElement('div');
@@ -103,40 +104,59 @@ export function mountWarningBanner(options: WarningBannerOptions): WarningBanner
   banner.setAttribute('aria-live', 'polite');
   banner.setAttribute('aria-atomic', 'true');
   banner.setAttribute('data-safepaste-banner', 'true');
-  banner.style.cssText = BANNER_STYLES.container;
+  const styles = doc.createElement('style');
+  styles.textContent = BANNER_CSS;
+  banner.appendChild(styles);
 
-  // 2.1 Header
+  // The title is present immediately; CSS only clips its visual presentation.
   const header = doc.createElement('div');
-  header.style.cssText = BANNER_STYLES.header;
+  header.setAttribute('class', 'sp-header');
+  const heading = doc.createElement('div');
+  heading.setAttribute('class', 'sp-heading');
 
-  const headerIcon = doc.createElement('span');
-  headerIcon.setAttribute('aria-hidden', 'true');
-  headerIcon.textContent = '🛡️';
+  // Lucide Shield Alert, ISC licensed; see THIRD_PARTY_NOTICES.md.
+  const icon = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  icon.setAttribute('class', 'sp-icon');
+  icon.setAttribute('viewBox', '0 0 24 24');
+  icon.setAttribute('fill', 'none');
+  icon.setAttribute('stroke', 'currentColor');
+  icon.setAttribute('stroke-width', '2');
+  icon.setAttribute('stroke-linecap', 'round');
+  icon.setAttribute('stroke-linejoin', 'round');
+  icon.setAttribute('aria-hidden', 'true');
+  for (const d of ['M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10', 'M12 8v4', 'M12 16h.01']) {
+    const path = doc.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', d);
+    icon.appendChild(path);
+  }
 
   const headerTitle = doc.createElement('span');
+  headerTitle.setAttribute('class', 'sp-title');
+  headerTitle.textContent = 'Potential secret detected';
+  const brand = doc.createElement('span');
+  brand.setAttribute('class', 'sp-brand');
+  brand.textContent = 'SafePaste';
   const count = session.findings.length;
-  headerTitle.textContent = `SafePaste: ${count} sensitive token${count === 1 ? '' : 's'} detected in paste`;
-
-  header.appendChild(headerIcon);
-  header.appendChild(headerTitle);
+  heading.appendChild(icon);
+  heading.appendChild(headerTitle);
+  header.appendChild(heading);
+  header.appendChild(brand);
   banner.appendChild(header);
 
   // 2.2 Findings list (category + masked preview)
   const findingsList = doc.createElement('ul');
-  findingsList.style.cssText = BANNER_STYLES.findingsList;
+  findingsList.setAttribute('class', 'sp-findings');
 
   for (const finding of session.findings) {
     const item = doc.createElement('li');
-    item.style.marginBottom = '4px';
 
     const categoryBadge = doc.createElement('span');
-    categoryBadge.style.cssText = BANNER_STYLES.badge;
+    categoryBadge.setAttribute('class', 'sp-category');
     categoryBadge.textContent = getCategoryLabel(finding.category);
 
-    const separator = doc.createTextNode(' ');
+    const separator = doc.createTextNode(' · ');
 
     const codePreview = doc.createElement('code');
-    codePreview.style.cssText = BANNER_STYLES.codePreview;
     codePreview.textContent = getMaskedPreview(finding);
 
     item.appendChild(categoryBadge);
@@ -148,25 +168,25 @@ export function mountWarningBanner(options: WarningBannerOptions): WarningBanner
 
   // 2.3 Best-effort disclaimer
   const disclaimer = doc.createElement('div');
-  disclaimer.style.cssText = BANNER_STYLES.disclaimer;
+  disclaimer.setAttribute('class', 'sp-disclaimer');
   disclaimer.textContent =
-    'Detection is best-effort. Normal paste and posting remain available; always review your content before submitting.';
+    'Detection is best-effort. Review your content before submitting.';
   banner.appendChild(disclaimer);
 
   // 2.4 Status message area (for validation/stale errors)
   const statusArea = doc.createElement('div');
   statusArea.setAttribute('aria-live', 'assertive');
-  statusArea.style.cssText = BANNER_STYLES.statusError;
+  statusArea.setAttribute('class', 'sp-error');
   statusArea.style.display = 'none';
   banner.appendChild(statusArea);
 
   // 2.5 Action buttons
   const actions = doc.createElement('div');
-  actions.style.cssText = BANNER_STYLES.actions;
+  actions.setAttribute('class', 'sp-actions');
 
   const redactBtn = doc.createElement('button');
   redactBtn.type = 'button';
-  redactBtn.style.cssText = BANNER_STYLES.buttonRedact;
+  redactBtn.setAttribute('class', 'sp-redact');
   redactBtn.textContent = 'Redact';
   redactBtn.setAttribute(
     'aria-label',
@@ -175,7 +195,7 @@ export function mountWarningBanner(options: WarningBannerOptions): WarningBanner
 
   const dismissBtn = doc.createElement('button');
   dismissBtn.type = 'button';
-  dismissBtn.style.cssText = BANNER_STYLES.buttonDismiss;
+  dismissBtn.setAttribute('class', 'sp-dismiss');
   dismissBtn.textContent = 'Dismiss';
   dismissBtn.setAttribute('aria-label', 'Dismiss warning');
 
@@ -203,6 +223,11 @@ export function mountWarningBanner(options: WarningBannerOptions): WarningBanner
     if (timerId !== undefined) {
       clearTimeout(timerId);
       timerId = undefined;
+    }
+
+    if (errorTimerId !== undefined) {
+      clearTimeout(errorTimerId);
+      errorTimerId = undefined;
     }
 
     doc.removeEventListener('keydown', onDocumentKeyDown);
@@ -243,7 +268,7 @@ export function mountWarningBanner(options: WarningBannerOptions): WarningBanner
         statusArea.style.display = 'block';
         redactBtn.disabled = true;
         // Auto-dismiss after brief feedback
-        setTimeout(handleDismiss, 4000);
+        errorTimerId = setTimeout(handleDismiss, 4000);
         return;
       }
 
