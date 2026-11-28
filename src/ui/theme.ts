@@ -1,108 +1,71 @@
-/**
- * Native styling for the non-blocking SafePaste warning banner.
- * Uses GitHub Primer CSS variables when available with resilient fallbacks
- * for both light and dark themes.
- */
-
-export const BANNER_STYLES = {
-  container: `
-    box-sizing: border-box;
-    width: 100%;
-    margin: 8px 0;
-    padding: 12px 14px;
-    border-radius: 6px;
-    border: 1px solid var(--borderColor-attention-muted, rgba(212, 167, 44, 0.4));
-    background-color: var(--bgColor-attention-muted, #fff8c5);
-    color: var(--fgColor-default, #1f2328);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
-    font-size: 13px;
-    line-height: 1.5;
-    position: relative;
-    z-index: 20;
-    transition: opacity 0.15s ease-out;
-  `.replace(/\s+/g, ' ').trim(),
-
-  header: `
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 600;
-    margin-bottom: 6px;
-  `.replace(/\s+/g, ' ').trim(),
-
-  badge: `
-    display: inline-block;
-    padding: 2px 6px;
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: 600;
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-    background-color: var(--bgColor-neutral-muted, rgba(175, 184, 193, 0.2));
-    color: var(--fgColor-default, #1f2328);
-    border: 1px solid var(--borderColor-neutral-muted, rgba(31, 35, 40, 0.15));
-  `.replace(/\s+/g, ' ').trim(),
-
-  codePreview: `
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-    font-size: 12px;
-    padding: 2px 5px;
-    border-radius: 4px;
-    background-color: var(--bgColor-muted, rgba(175, 184, 193, 0.2));
-    letter-spacing: 0.5px;
-  `.replace(/\s+/g, ' ').trim(),
-
-  findingsList: `
-    margin: 6px 0;
-    padding-left: 18px;
-  `.replace(/\s+/g, ' ').trim(),
-
-  disclaimer: `
-    font-size: 11px;
-    color: var(--fgColor-muted, #656d76);
-    margin-top: 6px;
-    margin-bottom: 10px;
-  `.replace(/\s+/g, ' ').trim(),
-
-  actions: `
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 8px;
-  `.replace(/\s+/g, ' ').trim(),
-
-  buttonRedact: `
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    padding: 5px 12px;
-    font-size: 12px;
-    font-weight: 600;
-    line-height: 20px;
-    color: #ffffff;
-    background-color: var(--button-primary-bgColor-rest, #1f883d);
-    border: 1px solid var(--button-primary-borderColor-rest, rgba(31, 35, 40, 0.15));
-    border-radius: 6px;
-    box-shadow: var(--shadow-resting-small, 0 1px 0 rgba(31, 35, 40, 0.04));
-  `.replace(/\s+/g, ' ').trim(),
-
-  buttonDismiss: `
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    padding: 5px 12px;
-    font-size: 12px;
-    font-weight: 500;
-    line-height: 20px;
-    color: var(--fgColor-default, #1f2328);
-    background-color: transparent;
-    border: 1px solid var(--button-default-borderColor-rest, rgba(31, 35, 40, 0.15));
-    border-radius: 6px;
-  `.replace(/\s+/g, ' ').trim(),
-
-  statusError: `
-    color: var(--fgColor-danger, #cf222e);
-    font-size: 12px;
-    margin-top: 6px;
-    font-weight: 500;
-  `.replace(/\s+/g, ' ').trim(),
-};
+/** Scoped banner styles. The 3px stepped frame follows the portfolio's .frame. */
+export const BANNER_CSS = `
+[data-safepaste-banner] {
+  --sp-pixel: 3px;
+  --sp-frame: #7caa4a;
+  --sp-fill: var(--bgColor-default, var(--color-canvas-default, #ffffff));
+  box-sizing: border-box;
+  width: 100%; min-width: 0; margin: 0 0 8px; padding: 14px 16px;
+  color: var(--fgColor-default, var(--color-fg-default, #1f2328));
+  font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background-image:
+    linear-gradient(var(--sp-frame) 0 0), linear-gradient(var(--sp-frame) 0 0),
+    linear-gradient(var(--sp-frame) 0 0), linear-gradient(var(--sp-frame) 0 0),
+    linear-gradient(var(--sp-frame) 0 0), linear-gradient(var(--sp-frame) 0 0),
+    linear-gradient(var(--sp-frame) 0 0), linear-gradient(var(--sp-frame) 0 0),
+    linear-gradient(var(--sp-frame) 0 0), linear-gradient(var(--sp-frame) 0 0),
+    linear-gradient(var(--sp-frame) 0 0), linear-gradient(var(--sp-frame) 0 0),
+    linear-gradient(var(--sp-fill) 0 0), linear-gradient(var(--sp-fill) 0 0),
+    linear-gradient(var(--sp-fill) 0 0), linear-gradient(var(--sp-fill) 0 0),
+    linear-gradient(var(--sp-fill) 0 0);
+  background-repeat: no-repeat;
+  background-size:
+    calc(100% - 18px) 3px, calc(100% - 18px) 3px,
+    3px calc(100% - 18px), 3px calc(100% - 18px),
+    3px 3px, 3px 3px, 3px 3px, 3px 3px,
+    3px 3px, 3px 3px, 3px 3px, 3px 3px,
+    calc(100% - 18px) 3px, calc(100% - 12px) 3px,
+    calc(100% - 6px) calc(100% - 18px),
+    calc(100% - 12px) 3px, calc(100% - 18px) 3px;
+  background-position:
+    9px 0, 9px 100%, 0 9px, 100% 9px,
+    left 6px top 3px, left 3px top 6px, right 6px top 3px, right 3px top 6px,
+    left 3px bottom 6px, left 6px bottom 3px, right 6px bottom 3px, right 3px bottom 6px,
+    9px 3px, 6px 6px, 3px 9px, 6px calc(100% - 6px), 9px calc(100% - 3px);
+  animation: safepaste-pop 160ms steps(3, end) both;
+}
+[data-safepaste-banner] .sp-brand { color: var(--fgColor-muted, var(--color-fg-muted, #656d76)); font: 700 11px/1.4 ui-monospace, monospace; letter-spacing: .04em; }
+[data-safepaste-banner] .sp-brand-mark { color: #7caa4a; }
+[data-safepaste-banner] .sp-title { display: inline-block; max-width: 100%; font-weight: 700; animation: safepaste-type 450ms steps(25, end) both; }
+[data-safepaste-banner] .sp-findings { margin: 6px 0; padding: 0; list-style: none; }
+[data-safepaste-banner] .sp-findings li { margin: 2px 0; overflow-wrap: anywhere; }
+[data-safepaste-banner] .sp-category { color: var(--fgColor-muted, var(--color-fg-muted, #656d76)); font-size: 12px; }
+[data-safepaste-banner] code { font: 12px ui-monospace, SFMono-Regular, Consolas, monospace; }
+[data-safepaste-banner] .sp-disclaimer { color: var(--fgColor-muted, var(--color-fg-muted, #656d76)); font-size: 11px; }
+[data-safepaste-banner] .sp-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+[data-safepaste-banner] button {
+  --sp-button-edge: var(--borderColor-default, var(--color-border-default, #818b98));
+  --sp-button-fill: var(--sp-fill);
+  --sp-button-shape: polygon(6px 0, calc(100% - 6px) 0, calc(100% - 6px) 3px, calc(100% - 3px) 3px, calc(100% - 3px) 6px, 100% 6px, 100% calc(100% - 6px), calc(100% - 3px) calc(100% - 6px), calc(100% - 3px) calc(100% - 3px), calc(100% - 6px) calc(100% - 3px), calc(100% - 6px) 100%, 6px 100%, 6px calc(100% - 3px), 3px calc(100% - 3px), 3px calc(100% - 6px), 0 calc(100% - 6px), 0 6px, 3px 6px, 3px 3px, 6px 3px);
+  position: relative; isolation: isolate; cursor: pointer; min-height: 36px;
+  padding: 6px 14px; border: 0; border-radius: 0; background: transparent;
+  font: 600 12px/20px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+[data-safepaste-banner] button::before, [data-safepaste-banner] button::after { content: ''; position: absolute; pointer-events: none; clip-path: var(--sp-button-shape); }
+[data-safepaste-banner] button::before { inset: 0; z-index: -2; background: var(--sp-button-edge); }
+[data-safepaste-banner] button::after { inset: 3px; z-index: -1; background: var(--sp-button-fill); }
+[data-safepaste-banner] button:focus-visible { outline: 2px solid var(--focus-outlineColor, #0969da); outline-offset: 2px; }
+[data-safepaste-banner] .sp-redact { --sp-button-edge: #4f5b39; --sp-button-fill: var(--sp-frame); color: #171917; }
+[data-safepaste-banner] .sp-redact:hover:not(:disabled) { --sp-button-fill: #91bb60; }
+[data-safepaste-banner] .sp-redact:active:not(:disabled) { --sp-button-fill: #6f9b40; }
+[data-safepaste-banner] .sp-redact:disabled { opacity: .6; cursor: default; }
+[data-safepaste-banner] .sp-dismiss { color: inherit; }
+[data-safepaste-banner] .sp-dismiss:hover { --sp-button-fill: var(--bgColor-muted, var(--color-canvas-subtle, #f6f8fa)); }
+[data-safepaste-banner] .sp-dismiss:active { --sp-button-edge: var(--fgColor-muted, var(--color-fg-muted, #656d76)); }
+[data-safepaste-banner] .sp-error { color: var(--fgColor-danger, var(--color-danger-fg, #cf222e)); font-size: 12px; margin-top: 6px; font-weight: 500; }
+@keyframes safepaste-pop { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes safepaste-type { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
+@media (prefers-reduced-motion: reduce) {
+  [data-safepaste-banner], [data-safepaste-banner] .sp-title { animation: none; }
+}
+`;
